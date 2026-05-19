@@ -1,0 +1,20 @@
+[gd_resource type="ShaderMaterial" format=3 uid="uid://c1fnxy3rhnhcc"]
+
+[ext_resource type="Shader" uid="uid://lu6uiescorqc" path="res://godite/runtime/render/shaders/cube/voxel_cube_wind.gdshader" id="1_cya8v"]
+
+[resource]
+render_priority = 0
+shader = ExtResource("1_cya8v")
+shader_parameter/wind_enabled = true
+shader_parameter/fade_from_distance = 25.0
+shader_parameter/fade_to_distance = 50.0
+shader_parameter/albedo = Color(0.9805, 1, 0.90999997, 1)
+shader_parameter/albedo_texture_size = Vector2i(0, 0)
+shader_parameter/roughness = 1.0
+shader_parameter/metallic_texture_channel = Vector4(1, 0, 0, 0)
+shader_parameter/specular = 0.5
+shader_parameter/metallic = 0.0
+shader_parameter/uv1_scale = Vector3(1, 1, 1)
+shader_parameter/uv1_offset = Vector3(0, 0, 0)
+shader_parameter/uv2_scale = Vector3(1, 1, 1)
+shader_parameter/uv2_offset = Vector3(0, 0, 0)

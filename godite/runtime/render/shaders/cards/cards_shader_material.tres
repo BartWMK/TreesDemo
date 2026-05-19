@@ -1,0 +1,180 @@
+[gd_resource type="ShaderMaterial" format=3 uid="uid://dshclqrkjnv2y"]
+
+[sub_resource type="Shader" id="Shader_bfkel"]
+code = "shader_type spatial;
+render_mode blend_mix, depth_draw_opaque, cull_back, diffuse_lambert, specular_schlick_ggx;
+
+//#include \"res://godite/runtime/render/shaders/cube/godite_wind.gdshaderinc\"
+#include \"res://godite/runtime/render/shaders/cube/fade_in.gdshaderinc\"
+
+uniform sampler2D impostor_atlas : source_color, hint_default_black, filter_nearest_mipmap_anisotropic;
+uniform sampler2D impostor_normal_atlas : hint_default_black, filter_nearest_mipmap_anisotropic;
+
+uniform float grid_size;
+uniform vec3 aabb_center;
+
+uniform float alpha_scissor_threshold : hint_range(0.0, 0.8);
+
+varying vec3 v_local_view_dir;
+
+// Converts 3D direction to 2D Octahedral UV
+vec2 get_octahedral_uv(vec3 dir) {
+    dir /= (abs(dir.x) + abs(dir.y) + abs(dir.z));
+    if (dir.y < 0.0) {
+        return (1.0 - abs(dir.zx)) * sign(dir.xz);
+    }
+    return dir.xz;
+}
+
+varying mat3 v_world_to_view_rot;
+varying float alpha_threshold;
+varying float view_distance;
+
+uniform float thickness_decay : hint_range(0.0, 1.0) = 0.2;
+
+void vertex() {
+    // 1. Capture the exact rotation from World to View
+	// Pass model_matrix to fragment; with multimeshinstance, MODEL_MATRIX is not
+	// the same as in vertex(...), but the transform of the node!; not the instance.
+	// To proper render in MMI case, need to manually pass the instance MODEL_MATRIX
+	// here from vertex(...)
+    v_world_to_view_rot = mat3(VIEW_MATRIX) * mat3(MODEL_MATRIX);
+	
+    // 1. SPHERICAL BILLBOARDING
+	const float scale = 1.0;
+    float scale_x = length(MODEL_MATRIX[0].xyz) * scale;
+    float scale_y = length(MODEL_MATRIX[1].xyz) * scale;
+    float scale_z = length(MODEL_MATRIX[2].xyz) * scale;
+	
+    // Instead of using the raw MODEL_MATRIX translation, calculate the world position of the AABB center.
+	// his is needed for proper grounding at the right handle (bottom trunk of tree for example)
+    vec4 world_center = MODEL_MATRIX * vec4(aabb_center, 1.0);
+	//world_center = MODEL_MATRIX * vec4(0.0,0.0,0.0, 1.0);
+	
+	// 3. Transform the model's \"Up\" vector into VIEW SPACE
+    // This captures the X/Z tilt relative to the camera's eye
+    vec3 view_up = normalize(mat3(VIEW_MATRIX) * mat3(MODEL_MATRIX) * vec3(0.0, 1.0, 0.0));
+    
+    // 4. Reconstruct the billboard in View Space
+    // In View Space, \"Forward\" is always (0, 0, 1)
+    vec3 view_forward = vec3(0.0, 0.0, 1.0);
+    vec3 view_right = normalize(cross(view_up, view_forward));
+    
+    // Re-calculate up to ensure perfect orthogonality in view space
+    view_up = cross(view_forward, view_right);
+
+    // 5. Build the final ModelView Matrix
+    // This is now purely in View Space, so it cannot \"thin out\"
+    mat4 view_model_matrix = mat4(
+        vec4(view_right * scale_x, 0.0),
+        vec4(view_up * scale_y, 0.0),
+        vec4(view_forward * scale_z, 0.0),
+        vec4(0.0, 0.0, 0.0, 1.0)
+    );
+
+    // 6. Set the position (the 4th column)
+    view_model_matrix[3].xyz = (VIEW_MATRIX * world_center).xyz;
+
+    MODELVIEW_MATRIX = view_model_matrix;
+
+    // 2. PASS DIRECTION TO FRAGMENT
+    vec3 world_view_dir = normalize(NODE_POSITION_WORLD - CAMERA_POSITION_WORLD);
+	// Instead of NODE_POSITION_WORLD
+	//vec3 world_instance_pos = MODEL_MATRIX[3].xyz;
+	//vec3 world_view_dir = normalize(world_instance_pos - CAMERA_POSITION_WORLD);
+
+    mat3 inv_model = mat3(inverse(MODEL_MATRIX));
+    v_local_view_dir = inv_model * world_view_dir;
+	
+	// View distance to allow scissor correction over distance
+	vec3 camera_forward = -INV_VIEW_MATRIX[2].xyz;
+	vec3 world_camera = INV_VIEW_MATRIX[3].xyz;
+
+	// 3. Get the vector from camera to the vertex (using world coordinates)
+	view_distance = dot(world_center.xyz - world_camera, camera_forward);
+    float visibility_factor = 1.0 / 1.0 + (view_distance * thickness_decay * 0.01); 
+    
+    alpha_threshold = alpha_scissor_threshold * visibility_factor;
+}
+
+
+void fragment() {
+    // 3. Octahedral Mapping (0.0 to 1.0 range)
+    vec2 oct_uv = get_octahedral_uv(normalize(v_local_view_dir)) * 0.5 + 0.5;
+    
+	// 4. Smooth Blending Math
+    vec2 grid_pos = oct_uv * (grid_size - 1.0);
+    vec2 tile_low = floor(grid_pos);
+    vec2 tile_high = ceil(grid_pos);
+    vec2 weight = fract(grid_pos);
+    
+    // 5. Bilinear Tile Sampling UV is the built-in mesh UV (0..1)
+    vec2 uv00 = (tile_low + UV) / grid_size;
+    vec2 uv10 = (vec2(tile_high.x, tile_low.y) + UV) / grid_size;
+    vec2 uv01 = (vec2(tile_low.x, tile_high.y) + UV) / grid_size;
+    vec2 uv11 = (tile_high + UV) / grid_size;
+
+    vec4 tex00 = texture(impostor_atlas, uv00);
+    vec4 tex10 = texture(impostor_atlas, uv10);
+    vec4 tex01 = texture(impostor_atlas, uv01);
+    vec4 tex11 = texture(impostor_atlas, uv11);
+    
+    // 6. Final Interpolation (Cross-fading the angles)
+    vec4 tex_x_low = mix(tex00, tex10, weight.x);
+    vec4 tex_x_high = mix(tex01, tex11, weight.x);
+    vec4 final_color = mix(tex_x_low, tex_x_high, weight.y);
+    
+	// Normal sampling
+	vec4 texn00 = texture(impostor_normal_atlas, uv00);
+	vec4 texn10 = texture(impostor_normal_atlas, uv10);
+	vec4 texn01 = texture(impostor_normal_atlas, uv01);
+	vec4 texn11 = texture(impostor_normal_atlas, uv11);
+
+	vec4 tex_nx_low = mix(texn00, texn10, weight.x);
+	vec4 tex_nx_high = mix(texn01, texn11, weight.x);
+	vec3 n_sample = mix(tex_nx_low, tex_nx_high, weight.y).xyz;
+
+	// Normal decode 
+	vec3 world_normal = normalize(n_sample.rgb * 2.0 - 1.0);	
+
+	// NOTE: this wont work in MultiMeshInstance3D: (see comment in vertex shader)
+	//       vec3 v_normal = mat3(VIEW_MATRIX) * mat3(MODEL_MATRIX) * w_normal;
+	// This does work:
+	NORMAL = v_world_to_view_rot * world_normal;
+
+	// Oddball multiply here; to take the hardest sting out of the brightness difference
+	// Could not get color/light/**black fringing** to solve so far...
+	// Things tried so far (and didnt help):
+	// 1. Even more dilation of altasses
+	// 2. Premultiplied alpha
+	// The maple is okay-ish (except for dark distance speckles)
+	// The spruce is a horror-show (just to thin/sparse i suspect)
+	//   it either fringes like quack up close, OR (higher scissor threshold)
+	//   gets cut away in the distance. Distance is near black either way.
+    ALBEDO = final_color.rgb * 1.25;
+
+	// Turn red if the normal is dying
+	//if (length(n_sample) < 0.5) {
+	    //ALBEDO = vec3(1.0, 0.0, 0.0); 
+	//}
+
+    ALPHA_SCISSOR_THRESHOLD = alpha_threshold;
+    ALPHA = final_color.a;
+
+	METALLIC = 0.0;
+	ROUGHNESS = 1.0;
+	SPECULAR = 0.0;
+
+	fade_in(IN_SHADOW_PASS, VERTEX, FRAGCOORD.xy);
+}
+"
+
+[resource]
+render_priority = 0
+shader = SubResource("Shader_bfkel")
+shader_parameter/fade_from_distance = 0.0
+shader_parameter/fade_to_distance = 0.0
+shader_parameter/grid_size = 9.0
+shader_parameter/aabb_center = Vector3(0, 0, 0)
+shader_parameter/alpha_scissor_threshold = 0.27200001292
+shader_parameter/thickness_decay = 0.02700000128249999

@@ -1,0 +1,11 @@
+[gd_resource type="ShaderMaterial" format=3 uid="uid://n6wnk516pjyo"]
+
+[ext_resource type="Shader" uid="uid://d3ufsh30m01ui" path="res://godite/runtime/render/shaders/cube/trees_trunk.gdshader" id="1_w6jm1"]
+
+[resource]
+render_priority = 0
+shader = ExtResource("1_w6jm1")
+shader_parameter/wind_enabled = true
+shader_parameter/fade_from_distance = 150.0
+shader_parameter/fade_to_distance = 250.0
+shader_parameter/albedo = Color(1, 1, 1, 1)
