@@ -1,5 +1,8 @@
 # TreesDemo
+Scene using Voxel LODs:
 ![VoxelModescene](docimg/voxels.png)
+
+Same scene using Octahedral projected billboards (cards)
 ![CardModescene](docimg/cards.png)
 
 Demo of rendering large amount of simple trees in Godot (playback only, no authoring tools)
