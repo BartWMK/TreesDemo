@@ -1,4 +1,7 @@
 # TreesDemo
+![VoxelModescene](docimg/voxels.png)
+![CardModescene](docimg/cards.png)
+
 Demo of rendering large amount of simple trees in Godot (playback only, no authoring tools)
 
 This is (part of) the code used for the GodotCon Amsterdam 2026 talk "The long road to a million trees".
@@ -31,3 +34,13 @@ How it works:
 4. Option for merging/'baking' distance cells (reducing draw calls, but this is not very noticable in this demo scene with just 2 asset-types). Since voxels use vertex color and no texture, things can easily be combined. Obviously does not work in card mode.
 5. Option for condensing (which boils down to removing some items in the distance, reducing draw time/overdraw/jitter); works for both voxel and card mode.
 6. Closeby cells (proximity cells) are converted to MeshInstance3Ds; with a LOD crossfade to their Faux counterpart
+
+![Threading](docimg/threading.png)
+
+![Workerthread1](docimg/worker1.png)
+
+![Workerthread2](docimg/worker2.png)
+
+![Main](docimg/main1.png)
+
+![Main2](docimg/main2.png)
