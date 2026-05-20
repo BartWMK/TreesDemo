@@ -24,7 +24,7 @@ Other notes:
 
 1. A 'gotcha' is that Godots build in script profiler does not discern between main and worker threads (im condidering adding a proposal for that to Godot).
 2. This does not include colliders (although could be done with simmilar approach)
-3. If this script-only method is used with > 3 assets mixed (and high volume/density of trees); due to iteration counts, CPU use will go up significantly; The overall setup works, but would need a native implementation to be useful.
+3. If this script-only method is used with > 3 assets mixed (and high volume/density of trees); due to iteration counts, MAIN thread CPU use *will* go up significantly (GPU is fine though); As such, the overall setup works, but would need a native implementation to be useful.
 4. Note the prefix of everything with 'Godite' at the time, YES i was being cheeky... 
 
 How it works in a nutshell:
