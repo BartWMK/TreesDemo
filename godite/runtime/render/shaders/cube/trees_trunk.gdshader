@@ -1,10 +1,3 @@
-// This shader is my spin on the TreeIt shader, it's simplified and modified to work without
-// any form of noise textures/fbm functions, and with variable alpha clip threshold.
-// Could be used as a trunk/leaf shader interchangeably.
-// Original TreeIt shader by EVOLVED Software
-// Modified by eight-b-six
-// MIT License
-
 shader_type spatial;
 #include "res://godite/runtime/render/shaders/cube/godite_wind.gdshaderinc"
 #include "res://godite/runtime/render/shaders/cube/fade_out.gdshaderinc"
@@ -12,7 +5,7 @@ render_mode blend_mix,depth_draw_opaque,cull_back,diffuse_burley,specular_schlic
 
 uniform vec4 albedo : source_color = vec4(1.0);
 uniform sampler2D texture_albedo : source_color,filter_linear_mipmap_anisotropic,repeat_enable;
-uniform sampler2D texture_normal : hint_normal,filter_linear_mipmap_anisotropic,repeat_enable;
+//uniform sampler2D texture_normal : hint_normal,filter_linear_mipmap_anisotropic,repeat_enable;
 
 varying float view_distance;
 

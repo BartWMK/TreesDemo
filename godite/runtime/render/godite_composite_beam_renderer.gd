@@ -10,6 +10,8 @@ var _composite: GoditeComposite
 var _edge_quality: float
 
 var stat_time: int
+var stat_mesh_select: int
+var stat_buffer_select: int
 
 func _init(composite: GoditeComposite) -> void:
 	_composite = composite
@@ -43,6 +45,9 @@ func _free_departures(sectors: Array[GoditeComposeBeamSector]) -> void:
 
 
 func _render_arrivals(sectors: Array[GoditeComposeBeamSector]) -> void:
+	stat_mesh_select = 0
+	stat_buffer_select = 0
+	
 	for sector: GoditeComposeBeamSector in sectors:
 		var mmi: MultiMeshInstance3D = _pools.claim(sector)
 		if not mmi:
@@ -56,12 +61,16 @@ func _render_arrivals(sectors: Array[GoditeComposeBeamSector]) -> void:
 			#mmi.multimesh.custom_aabb = aabb
 			#mmi.custom_aabb = aabb
 
+			var buffer_start: int = Time.get_ticks_usec()
 			mmi.multimesh.instance_count = int(sector.buffer.size() / 12.0)
 			mmi.multimesh.buffer = sector.buffer
+			stat_buffer_select += Time.get_ticks_usec() - buffer_start
 
 			var mesh: Mesh = asset.card_mesh if use_cards else asset.voxel_mesh
 			if mmi.multimesh.mesh != mesh:
+				var mesh_start: int = Time.get_ticks_usec()
 				mmi.multimesh.mesh = mesh
+				stat_mesh_select += Time.get_ticks_usec() - mesh_start
 			
 			mmi.position = sector.position
 			mmi.cast_shadow = asset.cluster_shadow_casting as MeshInstance3D.ShadowCastingSetting
@@ -86,12 +95,19 @@ func _cache_pool_warmup() -> void:
 	var meshes: Dictionary[Mesh, bool] = {}
 	for cell: GoditeCompositeCell in _composite.content_map.values():
 		for sector: GoditeComposeBeamSector in cell.beam_sectors:
-			GoditeAssetFade.apply(sector.asset, use_cards)
+			var asset: GoditeAsset = sector.asset
+			GoditeAssetFade.apply(asset, use_cards)
 			
-			var mesh: Mesh = sector.asset.card_mesh if use_cards else sector.asset.voxel_mesh
+			var mesh: Mesh = asset.card_mesh if use_cards else asset.voxel_mesh
 			if meshes.has(mesh):
 				continue
+				
+			if use_cards and asset.card_mesh == null:
+				push_warning("Asset %s does not support cards" % [ asset.title ])
+			if not use_cards and asset.voxel_mesh == null:
+				push_warning("Asset %s does not support voxelLOD" % [ asset.title ])
+				
 			meshes.set(mesh, true)	
-			_pools.warmup(mesh)
+			_pools.warmup(sector.asset, mesh)
 
 	print("Beam renderer cache pool warmup: %sms" % ((Time.get_ticks_usec() - start) / 1000.0))

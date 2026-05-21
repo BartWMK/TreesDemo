@@ -27,7 +27,8 @@ class_name GoditeRuntime
 
 ## Path to composite to load; game-runtime (also usable in editor using 'load_in_editor')
 @export var load_composite_path: String
-# Dont do this below; as it will cause (slow) saving of the referred resource, even if not changed
+# Dont do it like below; as it will cause (slow) saving of the referred resource, even if not changed
+# It would also overwrite the composite unpacked when saving the scene.
 #@e xport_file("*.res") var load_composite: String
 
 			

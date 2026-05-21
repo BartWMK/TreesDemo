@@ -262,7 +262,7 @@ func _process_level(cell: GoditeCompositeCell) -> void:
 	# its good enough, and not worth it to make 2 corner sets which is expensive)
 	# This also allows tuning, if needed, for 'longer shadows' not also 
 	# dissapearing when its caster moves out of screen.
-	cell_aabb = cell_aabb.grow(5)
+	cell_aabb = cell_aabb.grow(10)
 	
 	# Get cell projected cell corners into a buffer, we need them more than once
 	_get_corners(cell_aabb.position, cell_aabb.size, corners)

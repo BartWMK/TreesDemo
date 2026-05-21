@@ -6,7 +6,7 @@ render_mode blend_mix,depth_draw_opaque,cull_back,diffuse_burley,specular_schlic
 
 uniform vec4 albedo : source_color = vec4(1.0);
 uniform sampler2D texture_albedo : source_color,filter_linear_mipmap_anisotropic,repeat_enable;
-uniform sampler2D texture_normal : hint_normal,filter_linear_mipmap_anisotropic,repeat_enable;
+//uniform sampler2D texture_normal : hint_normal,filter_linear_mipmap_anisotropic,repeat_enable;
 uniform float alpha_scissor_threshold = 0.5;
 uniform float albedo_compensation = 0.55;
 uniform float thickness_decay : hint_range(0.0, 0.1) = 0.02;

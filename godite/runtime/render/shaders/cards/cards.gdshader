@@ -10,7 +10,8 @@ uniform sampler2D impostor_normal_atlas : hint_normal, filter_nearest_mipmap_ani
 uniform float grid_size;
 uniform vec3 aabb_center;
 
-uniform float alpha_scissor_threshold : hint_range(0.0, 0.8);
+uniform float alpha_scissor_threshold : hint_range(0.0, 0.99);
+uniform float scale_adjust : hint_range(0.5, 2.0) = 1.0;
 
 varying vec2 oct_uv;
 varying mat3 v_world_to_view_rot;
@@ -27,6 +28,8 @@ vec2 get_octahedral_uv(vec3 dir) {
 
 
 void vertex() {
+	
+	VERTEX *= scale_adjust;
     // 1. Capture the exact rotation from World to View
 	// Pass model_matrix to fragment; with multimeshinstance, MODEL_MATRIX is not
 	// the same as in vertex(...), but the transform of the node!; not the instance.

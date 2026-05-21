@@ -7,34 +7,34 @@ extends RefCounted
 ##  transform buffers can also be swapped in near 0 time).
 class_name GoditeCompositeBeamRendererPools
 
-var _pools: Dictionary[Mesh, GoditeCompositeBeamRendererCache] = {}
+var _pools: Dictionary[GoditeAsset, GoditeCompositeBeamRendererCache] = {}
 var _parent: Node
 
 func _init(parent: Node) -> void:
 	_parent = parent
 
 func claim(sector: GoditeComposeBeamSector) -> MultiMeshInstance3D:
-	return _get_pool(sector.asset.voxel_mesh).claim(sector)
+	return _get_pool(sector.asset).claim(sector)
 	
 
 func release(sector: GoditeComposeBeamSector) -> void:
-	var pool: GoditeCompositeBeamRendererCache = _pools.get(sector.asset.voxel_mesh)
+	var pool: GoditeCompositeBeamRendererCache = _pools.get(sector.asset)
 	if pool:
 		pool.release(sector)
 
 
-func warmup(mesh: Mesh) -> void:
-	for mmi: MultiMeshInstance3D in _get_pool(mesh)._available:
+func warmup(asset: GoditeAsset, mesh: Mesh) -> void:
+	for mmi: MultiMeshInstance3D in _get_pool(asset)._available:
 		mmi.multimesh.mesh = mesh
 
 func update_lod_bias(edge_quality: float) -> void:
 	for pool: GoditeCompositeBeamRendererCache in _pools.values():
 		pool.update_lod_bias(edge_quality)
 
-func _get_pool(mesh: Mesh) -> GoditeCompositeBeamRendererCache:
-	var pool: GoditeCompositeBeamRendererCache = _pools.get(mesh)
+func _get_pool(asset: GoditeAsset) -> GoditeCompositeBeamRendererCache:
+	var pool: GoditeCompositeBeamRendererCache = _pools.get(asset)
 	if not pool:
 		pool = GoditeCompositeBeamRendererCache.new(_parent)
-		_pools.set(mesh, pool)
+		_pools.set(asset, pool)
 	return pool
 	

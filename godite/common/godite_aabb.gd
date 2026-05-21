@@ -27,7 +27,7 @@ static func from_node(root: Node) -> AABB:
 		var local_aabb: AABB = from_mesh(mi.mesh)
 		
 		var tx: Transform3D = mi.global_transform if mi.is_inside_tree() else mi.transform
-		
+	
 		var world_aabb: AABB = local_aabb * tx
 
 		if first:

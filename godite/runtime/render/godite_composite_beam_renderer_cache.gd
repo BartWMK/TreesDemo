@@ -5,7 +5,7 @@ extends RefCounted
 class_name GoditeCompositeBeamRendererCache
 
 # This is a bit high, to allow for caching; x20 species is 20k nodes total for MMIs
-const MAX_INTERSECTIONS: int = 1000 
+const MAX_INTERSECTIONS: int = 4000 
  
 const CAPACITY: int = MAX_INTERSECTIONS
 
